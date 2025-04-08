@@ -1,0 +1,4 @@
+invalid config crash issue
+white parts in UI
+change path of default config and cache
+add install stuff with shortcut

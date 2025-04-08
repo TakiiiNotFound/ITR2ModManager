@@ -6,7 +6,7 @@ def open_tutorial():
 
 def open_github():
     """Opens the ITR2 Mod Manager Github page."""
-    webbrowser.open("https://github.com/TakiiiNotFound")
+    webbrowser.open("https://github.com/TakiiiNotFound/ITR2ModManager")
 
 def open_join():
     """Opens the Into The Radius Discord Server URL."""

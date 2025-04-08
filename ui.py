@@ -42,6 +42,11 @@ def start_ui():
     root.configure(bg="#171717")
     root.resizable(False, False)
 
+    # Set up ttk style for the Treeview (Mods list)
+    style = ttk.Style()
+    style.theme_use("clam")
+    style.configure("Treeview", background="#282828", fieldbackground="#282828", foreground="white")
+
     # Top frame for header and "Find new mods" button
     top_frame = tk.Frame(root, bg="#171717")
     top_frame.pack(side="top", fill="x", padx=20, pady=10)
@@ -64,7 +69,6 @@ def start_ui():
         frame = tk.Frame(notebook, bg="#171717")
         notebook.add(frame, text=name)
         tabs[name] = frame
-
     # Disable UE4SS tab (index 4)
     notebook.tab(4, state="disabled")
 
@@ -93,7 +97,6 @@ def start_ui():
             return
         expanded = get_expanded_paths(mods_tree)
         if column == "#1":  # "is enable?" column
-            # Disable toggling for fomod items.
             if mod_item.get("type") == "fomod":
                 return
             if mod_item.get("type") != "unknown":
@@ -173,9 +176,11 @@ def start_ui():
 
     # ---------------- Help Tab ----------------
     help_frame = tabs["Help"]
-    help_fomod_label = tk.Label(help_frame, text="Fomod setup tutorial", fg="white", bg="#171717")
+    # Change label text to "Fomod setup tutorial soon..."
+    help_fomod_label = tk.Label(help_frame, text="Fomod setup tutorial soon...", fg="white", bg="#171717")
     help_fomod_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
-    tutorial_button = tk.Button(help_frame, text="Tutorial", command=help_logic.open_tutorial)
+    # Remove the link: no command for the tutorial button
+    tutorial_button = tk.Button(help_frame, text="Tutorial")  # No command assigned
     tutorial_button.pack(side="top", anchor="nw", padx=20, pady=5)
     github_label = tk.Label(help_frame, text="ITR2 Mod Manager Github page", fg="white", bg="#171717")
     github_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
