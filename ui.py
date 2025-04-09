@@ -1,3 +1,4 @@
+import os
 import tkinter as tk
 from tkinter import ttk, messagebox, filedialog, simpledialog
 import webbrowser
@@ -9,10 +10,11 @@ from settings import (
     open_fomod_folder,
     check_itr2_game_folder
 )
-import help as help_logic  # Renamed to avoid conflict with built-in help()
+import help as help_logic  # Contains support functions for Help tab links
 from mods import populate_mods_tree, toggle_mod_state, delete_mod, mod_items
 import basic_install    # For Basic mod install
 import fomod_install    # For Fomod mod install
+import load_order       # For Load Order window
 
 def get_expanded_paths(tree):
     """Collects the set of folder paths for items that are currently expanded."""
@@ -41,15 +43,29 @@ def start_ui():
     root.geometry("800x600")
     root.configure(bg="#171717")
     root.resizable(False, False)
-
-    # Set up ttk style for the Treeview (Mods list)
+    
+    # Set window icon from %APPDATA%\ITR2ModManager\ITR2MM.ico
+    appdata = os.getenv("APPDATA")
+    icon_path = os.path.join(appdata, "ITR2ModManager", "ITR2MM.ico")
+    if os.path.exists(icon_path):
+        try:
+            root.iconbitmap(icon_path)
+        except Exception as e:
+            print("Error setting icon:", e)
+    
+    # Set up ttk style for the Treeview (Mods list) background and field background to #282828.
     style = ttk.Style()
     style.theme_use("clam")
     style.configure("Treeview", background="#282828", fieldbackground="#282828", foreground="white")
 
-    # Top frame for header and "Find new mods" button
+    # Top frame for header and buttons
     top_frame = tk.Frame(root, bg="#171717")
     top_frame.pack(side="top", fill="x", padx=20, pady=10)
+    
+    # "Launch ITR2" button on the left
+    launch_itr2_btn = tk.Button(top_frame, text="Launch ITR2", 
+                                command=lambda: webbrowser.open("steam://rungameid/2307350"))
+    launch_itr2_btn.pack(side="left", anchor="w", padx=(0, 10))
     
     header_label = tk.Label(top_frame, text="ITR2 Mod Manager", font=("TkDefaultFont", 16, "bold"), fg="white", bg="#171717")
     header_label.pack(side="left", anchor="w")
@@ -96,13 +112,13 @@ def start_ui():
         if not mod_item:
             return
         expanded = get_expanded_paths(mods_tree)
-        if column == "#1":  # "is enable?" column
+        if column == "#1":
             if mod_item.get("type") == "fomod":
                 return
             if mod_item.get("type") != "unknown":
                 toggle_mod_state(mod_item)
             populate_mods_tree(mods_tree, expanded)
-        elif column == "#2":  # "Delete" column
+        elif column == "#2":
             answer = messagebox.askyesno("Delete Mod", "Are you sure to delete this mod?")
             if answer:
                 if delete_mod(mod_item):
@@ -113,12 +129,12 @@ def start_ui():
 
     # ---------------- Install Tab ----------------
     install_frame = tabs["Install"]
-    # Basic mod install section
+    # Basic mod install
     basic_label = tk.Label(install_frame, text="Basic mod install", font=("TkDefaultFont", 12, "bold"), fg="white", bg="#171717")
     basic_label.pack(side="top", anchor="w", padx=20, pady=(20, 5))
     basic_install_button = tk.Button(install_frame, text="install", command=basic_install.basic_install)
     basic_install_button.pack(side="top", anchor="w", padx=20, pady=5)
-    # Fomod mod install section
+    # Fomod mod install
     fomod_label = tk.Label(install_frame, text="Fomod mod install", font=("TkDefaultFont", 12, "bold"), fg="white", bg="#171717")
     fomod_label.pack(side="top", anchor="w", padx=20, pady=(20, 5))
     fomod_install_button = tk.Button(install_frame, text="install", command=fomod_install.fomod_install)
@@ -146,7 +162,7 @@ def start_ui():
         check_itr2_game_folder(folder)
     game_folder_check = tk.Button(game_folder_frame, text="Check", command=on_check_itr2)
     game_folder_check.grid(row=1, column=2, padx=5, pady=5)
-
+    
     temp_folder_frame = tk.Frame(settings_frame, bg="#171717")
     temp_folder_frame.pack(side="top", anchor="nw", padx=20, pady=10)
     temp_folder_label = tk.Label(temp_folder_frame, text="Temp folder", fg="white", bg="#171717")
@@ -162,35 +178,46 @@ def start_ui():
             temp_folder_entry.insert(0, display_folder)
     temp_folder_select = tk.Button(temp_folder_frame, text="Select", command=on_select_temp)
     temp_folder_select.grid(row=1, column=1, padx=5, pady=5, sticky="e")
-
+    
     buttons_frame = tk.Frame(settings_frame, bg="#171717")
     buttons_frame.pack(side="top", anchor="nw", padx=20, pady=10)
     def on_clear_temp():
         clear_temp_folder()
     clear_temp_button = tk.Button(buttons_frame, text="Clear temp", command=on_clear_temp)
     clear_temp_button.grid(row=0, column=0, padx=(0, 10), pady=5)
+    
+    # New: Change load order button under Clear temp.
+    change_load_order_btn = tk.Button(buttons_frame, text="Change load order", 
+                                      command=lambda: load_order.open_load_order_window(master=root))
+    change_load_order_btn.grid(row=0, column=1, padx=(10, 0), pady=5)
+    
     def on_open_fomod():
         open_fomod_folder()
     open_fomod_button = tk.Button(buttons_frame, text="Open Fomod Creation Tool folder", command=on_open_fomod)
-    open_fomod_button.grid(row=0, column=1, padx=(10, 0), pady=5)
+    open_fomod_button.grid(row=0, column=2, padx=(10, 0), pady=5)
 
     # ---------------- Help Tab ----------------
     help_frame = tabs["Help"]
-    # Change label text to "Fomod setup tutorial soon..."
     help_fomod_label = tk.Label(help_frame, text="Fomod setup tutorial soon...", fg="white", bg="#171717")
     help_fomod_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
-    # Remove the link: no command for the tutorial button
-    tutorial_button = tk.Button(help_frame, text="Tutorial")  # No command assigned
+    tutorial_button = tk.Button(help_frame, text="Tutorial")  # No command assigned.
     tutorial_button.pack(side="top", anchor="nw", padx=20, pady=5)
+    
     github_label = tk.Label(help_frame, text="ITR2 Mod Manager Github page", fg="white", bg="#171717")
     github_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
-    github_button = tk.Button(help_frame, text="Github", command=help_logic.open_github)
+    github_button = tk.Button(help_frame, text="Github", command=lambda: webbrowser.open("https://github.com/TakiiiNotFound/ITR2ModManager"))
     github_button.pack(side="top", anchor="nw", padx=20, pady=5)
+    
     discord_label = tk.Label(help_frame, text="Into The Radius Discord Server", fg="white", bg="#171717")
     discord_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
     discord_button = tk.Button(help_frame, text="Join", command=help_logic.open_join)
     discord_button.pack(side="top", anchor="nw", padx=20, pady=5)
-
+    
+    support_label = tk.Label(help_frame, text="ITR2 Mod Manager support", fg="white", bg="#171717")
+    support_label.pack(side="top", anchor="nw", padx=20, pady=(20, 5))
+    support_button = tk.Button(help_frame, text="link", command=lambda: webbrowser.open("https://discord.com/channels/537645945006063636/1359296792889659493"))
+    support_button.pack(side="top", anchor="nw", padx=20, pady=5)
+    
     def on_tab_changed(event):
         selected_tab = event.widget.select()
         tab_text = event.widget.tab(selected_tab, "text")
